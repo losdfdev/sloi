@@ -1,0 +1,38 @@
+t=2026-02-23T19:00:44+0400 lvl=info msg="no configuration paths supplied"
+t=2026-02-23T19:00:44+0400 lvl=info msg="using configuration at default config path" path="/Users/claw/Library/Application Support/ngrok/ngrok.yml"
+t=2026-02-23T19:00:44+0400 lvl=info msg="open config file" path="/Users/claw/Library/Application Support/ngrok/ngrok.yml" err=nil
+t=2026-02-23T19:00:44+0400 lvl=info msg="FIPS 140 mode" enabled=false
+t=2026-02-23T19:00:44+0400 lvl=warn msg="can't bind default web address, trying alternatives" obj=web addr=127.0.0.1:4040
+t=2026-02-23T19:00:44+0400 lvl=info msg="starting web service" obj=web addr=127.0.0.1:4041 allow_hosts=[]
+t=2026-02-23T19:00:45+0400 lvl=info msg="client session established" obj=tunnels.session
+t=2026-02-23T19:00:45+0400 lvl=info msg="tunnel session started" obj=tunnels.session
+t=2026-02-23T19:00:45+0400 lvl=eror msg="session closing" obj=tunnels.session err="failed to start tunnel: The endpoint 'https://concentrative-scoldedly-jessica.ngrok-free.dev' is already online. Either\n1. stop your existing endpoint first, or\n2. start both endpoints with `--pooling-enabled` to load balance between them.\r\n\r\nERR_NGROK_334\r\n"
+t=2026-02-23T19:00:45+0400 lvl=info msg="accept failed" obj=tunnels.session obj=csess id=6db997846cbd err="reconnecting session closed"
+t=2026-02-23T19:00:45+0400 lvl=info msg="no more state changes" obj=tunnels.session
+t=2026-02-23T19:00:45+0400 lvl=info msg="received stop request" obj=apt=2026-02-23T19:01:55+0400 lvl=info msg="join connections" obj=join id=3e341908ef06 l=[::1]:5173 r=212.34.130.2:46438
+t=2026-02-23T19:02:07+0400 lvl=info msg="join connections" obj=join id=bba0d8a340e3 l=[::1]:5173 r=212.34.130.2:46438
+t=2026-02-23T20:14:30+0400 lvl=eror msg="session closed, starting reconnect loop" obj=tunnels.session obj=csess id=e588c2800eb4 err="read tcp 10.7.0.31:52153->52.28.187.147:443: read: operation timed out"
+t=2026-02-23T20:14:32+0400 lvl=info msg="client session established" obj=tunnels.session
+t=2026-02-23T20:14:32+0400 lvl=info msg="tunnel session started" obj=tunnels.session
+t=2026-02-23T20:35:54+0400 lvl=eror msg="session closed, starting reconnect loop" obj=tunnels.session obj=csess id=e588c2800eb4 err="read tcp 10.7.0.31:50271->3.123.177.80:443: read: connection reset by peer"
+t=2026-02-23T20:35:55+0400 lvl=eror msg="heartbeat timeout, terminating session" obj=tunnels.session obj=csess id=4dc193dfff23 clientid=da9c33b92531b31dc0ed57c7997aa5df
+t=2026-02-23T20:35:56+0400 lvl=info msg="client session established" obj=tunnels.session
+t=2026-02-23T20:35:56+0400 lvl=info msg="tunnel session started" obj=tunnels.session
+t=2026-02-23T20:53:52+0400 lvl=eror msg="session closed, starting reconnect loop" obj=tunnels.session obj=csess id=e588c2800eb4 err="read tcp 10.7.0.31:50302->3.125.92.105:443: read: connection reset by peer"
+t=2026-02-23T20:53:52+0400 lvl=eror msg="heartbeat timeout, terminating session" obj=tunnels.session obj=csess id=5588fecdcc7e clientid=da9c33b92531b31dc0ed57c7997aa5df
+t=2026-02-23T20:53:54+0400 lvl=info msg="client session established" obj=tunnels.session
+t=2026-02-23T20:53:54+0400 lvl=info msg="tunnel session started" obj=tunnels.session
+t=2026-02-23T21:10:00+0400 lvl=eror msg="heartbeat timeout, terminating session" obj=tunnels.session obj=csess id=836ef5672875 clientid=da9c33b92531b31dc0ed57c7997aa5df
+t=2026-02-23T21:10:58+0400 lvl=eror msg="heartbeat timeout, terminating session" obj=tunnels.session obj=csess id=a53b154c82c3 clientid=da9c33b92531b31dc0ed57c7997aa5df
+t=2026-02-23T21:10:58+0400 lvl=eror msg="session closed, starting reconnect loop" obj=tunnels.session obj=csess id=e588c2800eb4 err="session closed"
+t=2026-02-23T21:11:06+0400 lvl=info msg="client session established" obj=tunnels.session
+t=2026-02-23T21:11:06+0400 lvl=info msg="tunnel session started" obj=tunnels.session
+t=2026-02-23T21:41:01+0400 lvl=eror msg="session closed, starting reconnect loop" obj=tunnels.session obj=csess id=e588c2800eb4 err="read tcp 10.7.0.31:50349->3.125.92.105:443: read: operation timed out"
+t=2026-02-23T21:41:03+0400 lvl=info msg="client session established" obj=tunnels.session
+t=2026-02-23T21:41:03+0400 lvl=info msg="tunnel session started" obj=tunnels.session
+t=2026-02-23T21:57:24+0400 lvl=eror msg="heartbeat timeout, terminating session" obj=tunnels.session obj=csess id=a4fd73c46c93 clientid=da9c33b92531b31dc0ed57c7997aa5df
+t=2026-02-23T22:13:12+0400 lvl=eror msg="session closed, starting reconnect loop" obj=tunnels.session obj=csess id=e588c2800eb4 err="read tcp 10.7.0.31:50364->3.122.29.226:443: read: operation timed out"
+t=2026-02-23T22:25:49+0400 lvl=eror msg="failed to reconnect session" obj=tunnels.session err="failed to dial ngrok server with address \"connect.ngrok-agent.com:443\": dial tcp: lookup connect.ngrok-agent.com: i/o timeout"
+t=2026-02-23T22:25:50+0400 lvl=eror msg="heartbeat timeout, terminating session" obj=tunnels.session obj=csess id=6d4ee8df48da clientid=da9c33b92531b31dc0ed57c7997aa5df
+t=2026-02-23T22:25:53+0400 lvl=info msg="client session established" obj=tunnels.session
+t=2026-02-23T22:25:53+0400 lvl=info msg="tunnel session started" obj=tunnels.session

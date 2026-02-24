@@ -5,10 +5,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    allowedHosts: [
-      'concentrative-scoldedly-jessica.ngrok-free.dev',
-      'localhost',
-      '127.0.0.1'
-    ]
+    allowedHosts: true,
+    headers: {
+      'ngrok-skip-browser-warning': 'true'
+    }
   }
 })

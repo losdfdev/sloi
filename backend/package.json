@@ -7,16 +7,18 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "build": "echo 'Build complete'"
+    "build": "npm install --prefix ../frontend && npm run build --prefix ../frontend"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
     "@supabase/supabase-js": "^2.35.0",
     "axios": "^1.4.0",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
     "jsonwebtoken": "^9.0.0",
-    "crypto": "^1.0.1"
+    "multer": "^2.0.2",
+    "node-telegram-bot-api": "^0.67.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

@@ -3,11 +3,29 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import multer from 'multer';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+import { sendNotification } from './bot.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Получить начало дня (3:00 МСК) для расчета дневного лимита
+const getTodayStartMSK = () => {
+  const d = new Date();
+  d.setUTCHours(0, 0, 0, 0);
+  return d.toISOString();
+};
+
+// Config for Multer
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Middleware
 app.use(cors());
@@ -26,26 +44,32 @@ const supabase = createClient(
  * @param {Object} data - Данные от Telegram Web App
  * @returns {boolean}
  */
-function verifyTelegramAuth(data) {
+function verifyTelegramAuth(initData) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   if (!botToken) {
     console.error('TELEGRAM_BOT_TOKEN not set');
     return false;
   }
 
-  const checkString = Object.keys(data)
-    .filter((key) => key !== 'hash')
-    .sort()
-    .map((key) => `${key}=${data[key]}`)
-    .join('\n');
+  // Parse initData string to URLSearchParams
+  const urlParams = new URLSearchParams(initData);
+  const hash = urlParams.get('hash');
 
-  const secretKey = crypto.createHash('sha256').update(botToken).digest();
-  const hash = crypto
+  if (!hash) return false;
+
+  urlParams.delete('hash');
+
+  // Sort parameters alphabetically
+  const keys = Array.from(urlParams.keys()).sort();
+  const dataCheckString = keys.map(key => `${key}=${urlParams.get(key)}`).join('\n');
+
+  const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
+  const calculatedHash = crypto
     .createHmac('sha256', secretKey)
-    .update(checkString)
+    .update(dataCheckString)
     .digest('hex');
 
-  return hash === data.hash;
+  return calculatedHash === hash;
 }
 
 /**
@@ -54,13 +78,27 @@ function verifyTelegramAuth(data) {
  */
 app.post('/api/auth/telegram', async (req, res) => {
   try {
-    const { id, first_name, last_name, username, photo_url, auth_date, hash } =
-      req.body;
+    const { initData } = req.body;
+
+    if (!initData) {
+      return res.status(400).json({ error: 'Missing initData' });
+    }
 
     // Проверяем подпись
-    if (!verifyTelegramAuth(req.body)) {
+    if (!verifyTelegramAuth(initData)) {
       return res.status(401).json({ error: 'Invalid Telegram auth' });
     }
+
+    const urlParams = new URLSearchParams(initData);
+    const userStr = urlParams.get('user');
+    const auth_date = parseInt(urlParams.get('auth_date'), 10);
+
+    if (!userStr || !auth_date) {
+      return res.status(400).json({ error: 'Invalid user data in initData' });
+    }
+
+    const tgUser = JSON.parse(userStr);
+    const { id, first_name, last_name, username, photo_url } = tgUser;
 
     // Проверяем, что auth_date не слишком старый (максимум 10 минут)
     const currentTime = Math.floor(Date.now() / 1000);
@@ -78,16 +116,24 @@ app.post('/api/auth/telegram', async (req, res) => {
     let user;
 
     if (existingUser) {
-      // Обновляем данные пользователя
+      // Обновляем данные пользователя только если они еще не были установлены (защита от перезаписи собственных данных)
+      const updatePayload = {
+        last_login: new Date(),
+      };
+
+      // Если у пользователя нет фото, берем из телеграма. Иначе - оставляем как есть.
+      if (!existingUser.photos || existingUser.photos.length === 0) {
+        updatePayload.photo_url = photo_url || existingUser.photo_url;
+      }
+
+      // Имя и фамилия обновляются, если они почему-то пустые, чтобы не стирать отредактированные.
+      if (!existingUser.first_name) updatePayload.first_name = first_name;
+      if (!existingUser.last_name) updatePayload.last_name = last_name;
+      if (!existingUser.username) updatePayload.username = username;
+
       const { data: updated, error: updateError } = await supabase
         .from('users')
-        .update({
-          first_name,
-          last_name,
-          username,
-          photo_url,
-          last_login: new Date(),
-        })
+        .update(updatePayload)
         .eq('telegram_id', id)
         .select()
         .single();
@@ -107,6 +153,7 @@ app.post('/api/auth/telegram', async (req, res) => {
             photo_url,
             created_at: new Date(),
             last_login: new Date(),
+            notifications_enabled: true // Default when creating
           },
         ])
         .select()
@@ -114,6 +161,14 @@ app.post('/api/auth/telegram', async (req, res) => {
 
       if (createError) throw createError;
       user = newUser;
+    }
+
+    if (user && user.is_premium && user.premium_expires_at) {
+      if (new Date(user.premium_expires_at) < new Date()) {
+        user.is_premium = false;
+        user.premium_expires_at = null;
+        await supabase.from('users').update({ is_premium: false, premium_expires_at: null }).eq('id', user.id);
+      }
     }
 
     res.json({
@@ -142,6 +197,21 @@ app.get('/api/profiles/discover', async (req, res) => {
       return res.status(400).json({ error: 'user_id required' });
     }
 
+    // Получаем самого юзера, чтобы узнать его настройки поиска
+    const { data: currentUser } = await supabase
+      .from('users')
+      .select('search_gender, min_age, max_age, is_premium')
+      .eq('id', userId)
+      .single();
+
+    // Получаем количество свайпов за сегодня
+    const todayStart = getTodayStartMSK();
+    const { count: swipeCount } = await supabase
+      .from('interactions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gte('created_at', todayStart);
+
     // Получаем профили, которые юзер уже оценил
     const { data: interactions } = await supabase
       .from('interactions')
@@ -150,18 +220,38 @@ app.get('/api/profiles/discover', async (req, res) => {
 
     const excludedIds = interactions?.map((i) => i.target_user_id) || [];
 
-    // Получаем новые профили (исключая себя и уже оцененных)
-    const { data: profiles, error } = await supabase
+    // Строим запрос для новых профилей
+    let query = supabase
       .from('users')
-      .select('id, first_name, last_name, age, bio, photos')
+      .select('id, first_name, last_name, age, bio, photos, gender, notifications_enabled, hide_age, hide_online_status, show_in_search')
       .neq('id', userId)
+      .or('show_in_search.eq.true,show_in_search.is.null')
       .limit(limit);
+
+    // Применяем фильтр по полу, если он задан и не "all"
+    if (currentUser?.search_gender && currentUser.search_gender !== 'all') {
+      query = query.eq('gender', currentUser.search_gender);
+    }
+
+    // Применяем фильтры по возрасту
+    if (currentUser?.min_age) {
+      query = query.gte('age', currentUser.min_age);
+    }
+    if (currentUser?.max_age) {
+      query = query.lte('age', currentUser.max_age);
+    }
+
+    const { data: profiles, error } = await query;
 
     if (error) throw error;
 
     const filtered = profiles.filter((p) => !excludedIds.includes(p.id));
 
-    res.json({ profiles: filtered });
+    res.json({
+      profiles: filtered,
+      swipeCount: swipeCount || 0,
+      isPremium: currentUser?.is_premium || false
+    });
   } catch (error) {
     console.error('Discover error:', error);
     res.status(500).json({ error: error.message });
@@ -174,14 +264,22 @@ app.get('/api/profiles/discover', async (req, res) => {
  */
 app.get('/api/profiles/:id', async (req, res) => {
   try {
-    const { data: profile, error } = await supabase
+    let { data: profile, error } = await supabase
       .from('users')
-      .select('*')
+      .select('*, notifications_enabled') // Fetch notifications_enabled
       .eq('id', req.params.id)
       .single();
 
     if (error) throw error;
     if (!profile) return res.status(404).json({ error: 'Profile not found' });
+
+    if (profile.is_premium && profile.premium_expires_at) {
+      if (new Date(profile.premium_expires_at) < new Date()) {
+        profile.is_premium = false;
+        profile.premium_expires_at = null;
+        await supabase.from('users').update({ is_premium: false, premium_expires_at: null }).eq('id', profile.id);
+      }
+    }
 
     res.json(profile);
   } catch (error) {
@@ -196,11 +294,17 @@ app.get('/api/profiles/:id', async (req, res) => {
  */
 app.put('/api/profiles/:id', async (req, res) => {
   try {
-    const { first_name, last_name, age, bio, photos } = req.body;
+    const {
+      first_name, last_name, age, bio, photos, photo_url,
+      gender, search_gender, min_age, max_age, onboarding_completed, notifications_enabled
+    } = req.body;
 
     const { data: updated, error } = await supabase
       .from('users')
-      .update({ first_name, last_name, age, bio, photos })
+      .update({
+        first_name, last_name, age, bio, photos, photo_url,
+        gender, search_gender, min_age, max_age, onboarding_completed, notifications_enabled
+      })
       .eq('id', req.params.id)
       .select()
       .single();
@@ -209,6 +313,99 @@ app.put('/api/profiles/:id', async (req, res) => {
     res.json(updated);
   } catch (error) {
     console.error('Update error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============ ПОКУПКА PREMIUM ============
+
+/**
+ * POST /api/profiles/:id/grant-premium
+ * Имитирует успешную оплату через Stars и выдает +7 дней Premium
+ */
+app.post('/api/profiles/:id/grant-premium', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    let { data: profile } = await supabase.from('users').select('is_premium, premium_expires_at').eq('id', userId).single();
+    if (!profile) return res.status(404).json({ error: 'User not found' });
+
+    let newDate = new Date();
+    if (profile.is_premium && profile.premium_expires_at && new Date(profile.premium_expires_at) > new Date()) {
+      newDate = new Date(profile.premium_expires_at);
+    }
+    // Add 7 days
+    newDate.setDate(newDate.getDate() + 7);
+
+    const { data: updated, error } = await supabase
+      .from('users')
+      .update({ is_premium: true, premium_expires_at: newDate.toISOString() })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(updated);
+  } catch (err) {
+    console.error('Grant premium error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/profiles/:id/photo
+ * Загрузить новое фото профиля
+ */
+app.post('/api/profiles/:id/photo', upload.single('photo'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+    const fileExt = req.file.originalname.split('.').pop();
+    const fileName = `${req.params.id}-${Date.now()}.${fileExt}`;
+
+    // Загружаем в Supabase Storage (бакет "photos")
+    const { data, error } = await supabase.storage
+      .from('photos')
+      .upload(fileName, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: false
+      });
+
+    if (error) {
+      // Если бакет не существует или нет доступа, мы можем использовать заглушку для MVP
+      // Но для продакшена нужен правильно настроенный бакет "photos" с публичным доступом.
+      console.error('Supabase upload error (maybe bucket missing?):', error);
+      return res.status(500).json({ error: 'Storage error. Did you create the "photos" bucket?' });
+    }
+
+    // Получаем публичный URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('photos')
+      .getPublicUrl(fileName);
+
+    // Обновляем фото в профиле
+    const { data: user } = await supabase
+      .from('users')
+      .select('photos, photo_url')
+      .eq('id', req.params.id)
+      .single();
+
+    const currentPhotos = user?.photos || [];
+    currentPhotos.unshift(publicUrl);
+
+    const { data: updated, error: updateError } = await supabase
+      .from('users')
+      .update({
+        photos: currentPhotos,
+        photo_url: currentPhotos[0]
+      })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+    res.json(updated);
+  } catch (error) {
+    console.error('Photo upload error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -227,6 +424,21 @@ app.post('/api/interactions/like', async (req, res) => {
       return res
         .status(400)
         .json({ error: 'user_id and target_user_id required' });
+    }
+
+    // Проверка лимита свайпов для непремиум пользователей
+    const { data: userRecord } = await supabase.from('users').select('is_premium').eq('id', user_id).single();
+    if (!userRecord?.is_premium) {
+      const todayStart = getTodayStartMSK();
+      const { count: currentSwipes } = await supabase
+        .from('interactions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user_id)
+        .gte('created_at', todayStart);
+
+      if (currentSwipes >= 20) {
+        return res.status(403).json({ error: 'Limit reached', limitExceeded: true });
+      }
     }
 
     // Записываем лайк
@@ -261,10 +473,39 @@ app.post('/api/interactions/like', async (req, res) => {
         .select()
         .single();
 
-      return res.json({ interaction, match, isMatch: true });
-    }
+      // Fetch profiles to send notification
+      const { data: matchedProfiles } = await supabase
+        .from('users')
+        .select('id, telegram_id, first_name, notifications_enabled')
+        .in('id', [user_id, target_user_id]);
 
-    res.json({ interaction, isMatch: false });
+      if (matchedProfiles && matchedProfiles.length === 2) {
+        const u1 = matchedProfiles.find(p => p.id === user_id);
+        const u2 = matchedProfiles.find(p => p.id === target_user_id);
+
+        if (u1?.notifications_enabled) {
+          sendNotification(u1.telegram_id, `У вас новый Match с ${u2.first_name || 'кем-то'}! ❤️\nЗайдите в приложение, чтобы начать общение.`);
+        }
+        if (u2?.notifications_enabled) {
+          sendNotification(u2.telegram_id, `У вас новый Match с ${u1.first_name || 'кем-то'}! ❤️\nЗайдите в приложение, чтобы начать общение.`);
+        }
+      }
+
+      return res.json({ interaction, match, isMatch: true });
+    } else {
+      // Just a like, notify the target user if they have notifications enabled
+      const { data: targetUser } = await supabase
+        .from('users')
+        .select('telegram_id, notifications_enabled')
+        .eq('id', target_user_id)
+        .single();
+
+      if (targetUser?.notifications_enabled) {
+        sendNotification(targetUser.telegram_id, `Кому-то понравилась ваша анкета! 🔥\nЗайдите в приложение, чтобы узнать кто это.`);
+      }
+
+      return res.json({ interaction, isMatch: false });
+    }
   } catch (error) {
     console.error('Like error:', error);
     res.status(500).json({ error: error.message });
@@ -283,6 +524,21 @@ app.post('/api/interactions/dislike', async (req, res) => {
       return res
         .status(400)
         .json({ error: 'user_id and target_user_id required' });
+    }
+
+    // Проверка лимита свайпов для непремиум пользователей
+    const { data: userRecord } = await supabase.from('users').select('is_premium').eq('id', user_id).single();
+    if (!userRecord?.is_premium) {
+      const todayStart = getTodayStartMSK();
+      const { count: currentSwipes } = await supabase
+        .from('interactions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user_id)
+        .gte('created_at', todayStart);
+
+      if (currentSwipes >= 20) {
+        return res.status(403).json({ error: 'Limit reached', limitExceeded: true });
+      }
     }
 
     const { data: interaction, error } = await supabase
@@ -325,15 +581,72 @@ app.get('/api/matches/:user_id', async (req, res) => {
   }
 });
 
+// ============ TELEGRAM STARS ============
+
+/**
+ * POST /api/stars/invoice
+ * Создать ссылку на оплату подписки / доп свайпов через Telegram Stars
+ */
+app.post('/api/stars/invoice', async (req, res) => {
+  try {
+    const { user_id, type } = req.body;
+    let amount = 100; // 100 Stars
+    let description = 'Премиум подписка на 7 дней';
+    let payload = `premium_7days_${user_id}`;
+
+    if (type === 'boost') {
+      amount = 50;
+      description = 'Буст профиля на 24 часа';
+      payload = `boost_${user_id}`;
+    }
+
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    if (!botToken) {
+      return res.status(500).json({ error: 'Bot token not set' });
+    }
+
+    const response = await fetch(`https://api.telegram.org/bot${botToken}/createInvoiceLink`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Sloi',
+        description,
+        payload,
+        provider_token: "", // Для Telegram Stars провайдер токен не нужен, оставляем пустым
+        currency: 'XTR',
+        prices: [{ label: 'Stars', amount: amount }]
+      })
+    });
+
+    const data = await response.json();
+    if (!data.ok) throw new Error(data.description);
+
+    res.json({ invoice_link: data.result });
+  } catch (error) {
+    console.error('Stars invoice error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============ HEALTH CHECK ============
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });
 });
 
+// ============ СТАТИКА ДЛЯ ПРОДАКШЕНА (RENDER) ============
+if (process.env.NODE_ENV === 'production') {
+  const frontendPath = path.join(__dirname, '../../frontend/dist');
+  app.use(express.static(frontendPath));
+
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+  });
+}
+
 // ============ СТАРТ СЕРВЕРА ============
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📱 Bot ID: ${process.env.TELEGRAM_BOT_ID}`);
 });

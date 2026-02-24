@@ -1,0 +1,33 @@
+2026-02-24T15:07:47Z INF Thank you for trying Cloudflare Tunnel. Doing so, without a Cloudflare account, is a quick way to experiment and try it out. However, be aware that these account-less Tunnels have no uptime guarantee, are subject to the Cloudflare Online Services Terms of Use (https://www.cloudflare.com/website-terms/), and Cloudflare reserves the right to investigate your use of Tunnels for violations of such terms. If you intend to use Tunnels in production you should use a pre-created named tunnel by following: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps
+2026-02-24T15:07:47Z INF Requesting new quick Tunnel on trycloudflare.com...
+2026-02-24T15:07:52Z INF +--------------------------------------------------------------------------------------------+
+2026-02-24T15:07:52Z INF |  Your quick Tunnel has been created! Visit it at (it may take some time to be reachable):  |
+2026-02-24T15:07:52Z INF |  https://planets-genius-grain-extract.trycloudflare.com                                    |
+2026-02-24T15:07:52Z INF +--------------------------------------------------------------------------------------------+
+2026-02-24T15:07:52Z INF Cannot determine default configuration path. No file [config.yml config.yaml] in [~/.cloudflared ~/.cloudflare-warp ~/cloudflare-warp /etc/cloudflared /usr/local/etc/cloudflared]
+2026-02-24T15:07:52Z INF Version 2026.2.0 (Checksum 6e9d54c175f1c5367e4edab513f205638fe9c69e10406f228dd9a56a3a371db4)
+2026-02-24T15:07:52Z INF GOOS: darwin, GOVersion: go1.25.6, GoArch: arm64
+2026-02-24T15:07:52Z INF Settings: map[ha-connections:1 p:http2 protocol:http2 url:http://127.0.0.1:5173]
+2026-02-24T15:07:52Z INF Autoupdate frequency is set autoupdateFreq=86400000
+2026-02-24T15:07:52Z INF Generated Connector ID: 7cb8c6bd-fe3a-4531-b3ae-21b9614ec3a6
+2026-02-24T15:07:52Z INF Initial protocol http2
+2026-02-24T15:07:52Z INF ICMP proxy will use 192.168.0.79 as source for IPv4
+2026-02-24T15:07:52Z INF ICMP proxy will use fe80::1856:e00:96bf:f597 in zone en0 as source for IPv6
+2026-02-24T15:07:52Z INF Created ICMP proxy listening on 192.168.0.79:0
+2026-02-24T15:07:52Z INF ICMP proxy will use 192.168.0.79 as source for IPv4
+2026-02-24T15:07:52Z INF ICMP proxy will use fe80::1856:e00:96bf:f597 in zone en0 as source for IPv6
+2026-02-24T15:07:52Z INF Starting metrics server on 127.0.0.1:20241/metrics
+2026-02-24T15:07:52Z INF Registered tunnel connection connIndex=0 connection=b801ab6b-de4d-48a6-a128-155a2ef80b0a event=0 ip=198.41.200.73 location=dme06 protocol=http2
+2026-02-24T15:10:43Z INF Lost connection with the edge connIndex=0
+2026-02-24T15:10:43Z ERR failed to serve incoming request error="Error shutting down control stream: client disconnected"
+2026-02-24T15:10:43Z ERR Serve tunnel error error="connection with edge closed" connIndex=0 event=0 ip=198.41.200.73
+2026-02-24T15:10:43Z INF Retrying connection in up to 1s connIndex=0 event=0 ip=198.41.200.73
+2026-02-24T15:10:44Z ERR Connection terminated error="connection with edge closed" connIndex=0
+2026-02-24T15:10:53Z INF Registered tunnel connection connIndex=0 connection=781fccb6-0992-4e52-8ba9-6d810ac7aca4 event=0 ip=198.41.200.73 location=dme01 protocol=http2
+2026-02-24T15:11:22Z INF Initiating graceful shutdown due to signal terminated ...
+2026-02-24T15:11:43Z INF Retrying connection in up to 1s connIndex=0 event=0 ip=198.41.200.73
+2026-02-24T15:11:43Z ERR failed to serve incoming request error="Error shutting down control stream: rpc: connection closed"
+2026-02-24T15:11:43Z ERR Connection terminated connIndex=0
+2026-02-24T15:11:43Z ERR no more connections active and exiting
+2026-02-24T15:11:43Z INF Tunnel server stopped
+2026-02-24T15:11:43Z INF Metrics server stopped

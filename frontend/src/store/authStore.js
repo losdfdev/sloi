@@ -41,9 +41,7 @@ export const useAuthStore = create((set, get) => ({
 
           // Отправляем на сервер для проверки подписи
           const response = await api.post('/api/auth/telegram', {
-            ...user,
-            auth_date: parseInt(authDate),
-            hash,
+            initData: initData,
           });
 
           if (response.data.success) {
