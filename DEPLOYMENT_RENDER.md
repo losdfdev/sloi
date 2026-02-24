@@ -31,7 +31,7 @@ Render автоматически подтягивает код из Github.
 3. Настройки для фронтенда:
    - **Name:** слои-frontend
    - **Root Directory:** `frontend` (ВАЖНО! Указываем папку фронта)
-   - **Build Command:** `npm run build`
+   - **Build Command:** `npm install && npm run build`
    - **Publish directory:** `dist`
 4. В разделе **Environment Variables** добавьте:
    - `VITE_API_URL` = `<Ваш URL бэкенда, который вы скопировали на Шаге 2>` (без слеша на конце!)
