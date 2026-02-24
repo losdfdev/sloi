@@ -143,15 +143,15 @@ export default function MatchesPage() {
                   className="w-full bg-[#141415] border border-white/5 hover:bg-white/5 hover:border-white/10 rounded-3xl p-4 text-left transition-all flex items-center gap-4 group"
                 >
                   {/* Фото */}
-                  <div className="w-16 h-16 rounded-full overflow-hidden bg-white/5 border border-white/10 shrink-0">
+                  <div className="w-20 h-20 rounded-2xl overflow-hidden bg-white/5 border border-white/10 shrink-0 shadow-xl group-hover:border-blue-500/50 transition-colors duration-500">
                     {partner?.photos?.[0] || partner?.photo_url ? (
                       <img
                         src={partner.photos?.[0] || partner.photo_url}
                         alt={partner?.first_name}
-                        className="w-full h-full object-cover grayscale-[30%] group-hover:grayscale-0 transition-all duration-300"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-2xl opacity-50">
+                      <div className="w-full h-full flex items-center justify-center text-3xl opacity-50 bg-gradient-to-br from-white/5 to-white/0">
                         👤
                       </div>
                     )}
@@ -159,21 +159,32 @@ export default function MatchesPage() {
 
                   {/* Информация */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-white truncate group-hover:text-blue-400 transition-colors">
+                    <h3 className="text-xl font-bold text-white truncate group-hover:text-blue-400 transition-colors">
                       {partner?.first_name} {partner?.last_name || ''}
                     </h3>
-                    <p className="text-sm font-medium text-blue-400 mt-0.5 truncate group-hover:underline">
-                      {partner?.username ? `@${partner.username}` : 'Скрытый ник'}
-                    </p>
-                    <p className="text-xs text-white/40 truncate mt-1">
+
+                    {partner?.username ? (
+                      <div className="inline-flex items-center gap-1.5 mt-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-wider group-hover:bg-blue-500/20 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
+                          <path d="M3.478 2.404a.75.75 0 00-.926.941l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.404z" />
+                        </svg>
+                        @{partner.username}
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center gap-1.5 mt-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/40 text-[10px] font-bold uppercase tracking-wider">
+                        Ник скрыт
+                      </div>
+                    )}
+
+                    <p className="text-[10px] text-white/30 truncate mt-2 font-medium uppercase tracking-widest">
                       Матч: {new Date(match.matched_at).toLocaleDateString('ru-RU')}
                     </p>
                   </div>
 
-                  {/* Иконка чата (Telegram) */}
-                  <div className="w-10 h-10 rounded-full bg-white/5 group-hover:bg-blue-500/20 flex items-center justify-center text-white/30 group-hover:text-blue-400 transition-all shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 ml-1">
-                      <path d="M3.478 2.404a.75.75 0 00-.926.941l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.404z" />
+                  {/* Кнопка действия */}
+                  <div className="w-12 h-12 rounded-2xl bg-white/5 group-hover:bg-blue-500/20 flex items-center justify-center text-white/20 group-hover:text-blue-400 transition-all duration-300 border border-white/5 group-hover:border-blue-500/30 shrink-0 shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                      <path fillRule="evenodd" d="M12.97 3.97a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 11-1.06-1.06l6.22-6.22H3a.75.75 0 010-1.5h16.19l-6.22-6.22a.75.75 0 010-1.06z" clipRule="evenodd" />
                     </svg>
                   </div>
                 </button>

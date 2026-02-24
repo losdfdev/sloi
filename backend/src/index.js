@@ -153,7 +153,9 @@ app.post('/api/auth/telegram', async (req, res) => {
             photo_url,
             created_at: new Date(),
             last_login: new Date(),
-            notifications_enabled: true // Default when creating
+            notifications_enabled: true,
+            show_in_search: true, // По умолчанию показываем в поиске
+            is_banned: false
           },
         ])
         .select()
@@ -230,25 +232,29 @@ app.get('/api/profiles/discover', async (req, res) => {
     const superLikedMeIds = superlikesReceived?.map((i) => i.user_id) || [];
 
     // Строим запрос для новых профилей
+    // Берем с запасом (50 человек), чтобы после фильтрации JS-ом что-то осталось
     let query = supabase
       .from('users')
       .select('id, first_name, last_name, age, bio, photos, gender, notifications_enabled, hide_age, hide_online_status, show_in_search, is_banned')
       .neq('id', userId)
-      .or('show_in_search.eq.true,show_in_search.is.null')
-      .or('is_banned.eq.false,is_banned.is.null')
-      .limit(limit);
+      .eq('is_banned', false) // Упрощаем фильтр бана
+      .or('show_in_search.eq.true,show_in_search.is.null') // Оставляем null для совместимости со старыми записями
+      .limit(50);
 
-    // Применяем фильтр по полу, если он задан и не "all"
+    // Добавляем фильтры настроек, если они есть
     if (currentUser?.search_gender && currentUser.search_gender !== 'all') {
       query = query.eq('gender', currentUser.search_gender);
     }
-
-    // Применяем фильтры по возрасту
     if (currentUser?.min_age) {
       query = query.gte('age', currentUser.min_age);
     }
     if (currentUser?.max_age) {
       query = query.lte('age', currentUser.max_age);
+    }
+
+    // Исключаем тех, кого уже оценили (если их не слишком много для лимита Supabase)
+    if (excludedIds.length > 0 && excludedIds.length < 500) {
+      query = query.not('id', 'in', `(${excludedIds.join(',')})`);
     }
 
     const { data: profiles, error } = await query;
