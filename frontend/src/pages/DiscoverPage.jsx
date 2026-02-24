@@ -53,8 +53,8 @@ export default function DiscoverPage() {
         return [...prev, ...newProfiles];
       });
     } catch (err) {
-      console.error('Error fetching profiles:', err);
-      setError('Ошибка при загрузке профилей');
+      console.error('Error fetching profiles details:', err.response?.data || err.message);
+      setError(`Ошибка: ${err.response?.data?.error || err.message}`);
     } finally {
       setLoading(false);
       setRefreshing(false);

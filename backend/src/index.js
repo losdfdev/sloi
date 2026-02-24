@@ -237,7 +237,7 @@ app.get('/api/profiles/discover', async (req, res) => {
       .from('users')
       .select('id, first_name, last_name, age, bio, photos, gender, notifications_enabled, hide_age, hide_online_status, show_in_search, is_banned, created_at')
       .neq('id', userId)
-      .eq('is_banned', false)
+      .or('is_banned.eq.false,is_banned.is.null') //Handle NULL is_banned
       .or('show_in_search.eq.true,show_in_search.is.null')
       .order('created_at', { ascending: false }) // Новые пользователи сверху!
       .limit(100);
@@ -254,12 +254,10 @@ app.get('/api/profiles/discover', async (req, res) => {
     }
 
     // Исключаем тех, кого уже оценили в БД (если их не слишком много)
-    // Supabase-js поддерживает передачу массива напрямую в .not('id', 'in', array)
     if (excludedIds.length > 0) {
-      // Если список очень большой, PostgREST может упасть из-за длины URL.
-      // Поэтому берем последние 500 взаимодействий для фильтрации в БД
-      const limitedExcludedIds = excludedIds.slice(-500);
-      query = query.not('id', 'in', limitedExcludedIds);
+      const limitedExcludedIds = excludedIds.slice(-200); // Reduce size to avoid URL limit
+      // PostgREST syntax for NOT IN with multiple values
+      query = query.not('id', 'in', `(${limitedExcludedIds.join(',')})`);
     }
 
     const { data: profiles, error } = await query;
