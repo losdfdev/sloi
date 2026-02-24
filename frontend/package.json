@@ -16,9 +16,9 @@
     "zustand": "^4.4.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.0.3",
+    "@vitejs/plugin-react": "^5.1.4",
     "autoprefixer": "^10.4.24",
-    "vite": "^4.4.9"
+    "vite": "^7.3.1"
   },
   "scripts": {
     "dev": "vite",
