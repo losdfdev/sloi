@@ -160,10 +160,13 @@ export default function MatchesPage() {
                   {/* Информация */}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-bold text-white truncate group-hover:text-blue-400 transition-colors">
-                      {partner?.first_name}
+                      {partner?.first_name} {partner?.last_name || ''}
                     </h3>
+                    <p className="text-sm font-medium text-blue-400 mt-0.5 truncate group-hover:underline">
+                      {partner?.username ? `@${partner.username}` : 'Скрытый ник'}
+                    </p>
                     <p className="text-xs text-white/40 truncate mt-1">
-                      {new Date(match.matched_at).toLocaleDateString('ru-RU')}
+                      Матч: {new Date(match.matched_at).toLocaleDateString('ru-RU')}
                     </p>
                   </div>
 
