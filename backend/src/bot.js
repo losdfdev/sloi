@@ -21,7 +21,7 @@ if (bot) {
                     [
                         {
                             text: "🔥 Открыть Sloi",
-                            web_app: { url: "https://0723f43848391a6f-87-240-60-239.serveousercontent.com" }
+                            web_app: { url: process.env.WEBAPP_URL || "https://sloi-frontend.onrender.com" }
                         }
                     ]
                 ]
