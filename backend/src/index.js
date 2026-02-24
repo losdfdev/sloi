@@ -659,14 +659,8 @@ app.get('/api/health', (req, res) => {
 });
 
 // ============ СТАТИКА ДЛЯ ПРОДАКШЕНА (RENDER) ============
-if (process.env.NODE_ENV === 'production') {
-  const frontendPath = path.join(__dirname, '../../frontend/dist');
-  app.use(express.static(frontendPath));
-
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'index.html'));
-  });
-}
+// Frontend is deployed as a separate service on Render, so the backend only serves APIs.
+// Skipping express.static for frontend/dist to prevent ENOENT crashes.
 
 // ============ СТАРТ СЕРВЕРА ============
 
