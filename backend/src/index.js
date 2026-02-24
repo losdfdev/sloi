@@ -232,14 +232,15 @@ app.get('/api/profiles/discover', async (req, res) => {
     const superLikedMeIds = superlikesReceived?.map((i) => i.user_id) || [];
 
     // Строим запрос для новых профилей
-    // Берем с запасом (50 человек), чтобы после фильтрации JS-ом что-то осталось
+    // Берем с запасом (100 человек), чтобы после фильтрации JS-ом что-то осталось
     let query = supabase
       .from('users')
-      .select('id, first_name, last_name, age, bio, photos, gender, notifications_enabled, hide_age, hide_online_status, show_in_search, is_banned')
+      .select('id, first_name, last_name, age, bio, photos, gender, notifications_enabled, hide_age, hide_online_status, show_in_search, is_banned, created_at')
       .neq('id', userId)
-      .eq('is_banned', false) // Упрощаем фильтр бана
-      .or('show_in_search.eq.true,show_in_search.is.null') // Оставляем null для совместимости со старыми записями
-      .limit(50);
+      .eq('is_banned', false)
+      .or('show_in_search.eq.true,show_in_search.is.null')
+      .order('created_at', { ascending: false }) // Новые пользователи сверху!
+      .limit(100);
 
     // Добавляем фильтры настроек, если они есть
     if (currentUser?.search_gender && currentUser.search_gender !== 'all') {
@@ -252,9 +253,13 @@ app.get('/api/profiles/discover', async (req, res) => {
       query = query.lte('age', currentUser.max_age);
     }
 
-    // Исключаем тех, кого уже оценили (если их не слишком много для лимита Supabase)
-    if (excludedIds.length > 0 && excludedIds.length < 500) {
-      query = query.not('id', 'in', `(${excludedIds.join(',')})`);
+    // Исключаем тех, кого уже оценили в БД (если их не слишком много)
+    // Supabase-js поддерживает передачу массива напрямую в .not('id', 'in', array)
+    if (excludedIds.length > 0) {
+      // Если список очень большой, PostgREST может упасть из-за длины URL.
+      // Поэтому берем последние 500 взаимодействий для фильтрации в БД
+      const limitedExcludedIds = excludedIds.slice(-500);
+      query = query.not('id', 'in', limitedExcludedIds);
     }
 
     const { data: profiles, error } = await query;

@@ -44,7 +44,8 @@ export default function OnboardingPage() {
                 gender: formData.gender,
                 search_gender: formData.search_gender,
                 bio: formData.bio,
-                onboarding_completed: true
+                onboarding_completed: true,
+                show_in_search: true
             };
             if (formData.photo_url) {
                 // If they already uploaded a photo, we make sure it's saved. But the backend photo endpoint already updates the db.
