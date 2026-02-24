@@ -9,6 +9,29 @@ const api = axios.create({
   timeout: 10000,
 });
 
+// Helper function to extract fallback logic
+const fallbackAuth = (set) => {
+  const savedToken = localStorage.getItem('token');
+  const savedUser = localStorage.getItem('user');
+
+  if (savedToken && savedUser) {
+    set({
+      user: JSON.parse(savedUser),
+      isAuthenticated: true,
+      token: savedToken,
+      loading: false,
+      error: null,
+    });
+    return true;
+  } else {
+    set({
+      loading: false,
+      error: 'Зайдите в приложение через Telegram или настройте Local Storage',
+    });
+    return false;
+  }
+};
+
 export const useAuthStore = create((set, get) => ({
   user: null,
   isAuthenticated: false,
@@ -21,7 +44,7 @@ export const useAuthStore = create((set, get) => ({
       set({ loading: true, error: null });
 
       // Проверяем, доступна ли Telegram WebApp API
-      if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+      if (typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp) {
         const webApp = window.Telegram.WebApp;
         webApp.ready();
 
@@ -36,7 +59,8 @@ export const useAuthStore = create((set, get) => ({
           const hash = params.get('hash');
 
           if (!user.id || !authDate || !hash) {
-            throw new Error('Неполные данные авторизации от Telegram');
+            console.warn('Неполные данные авторизации от Telegram. Использую локальный кэш.');
+            return fallbackAuth(set);
           }
 
           // Отправляем на сервер для проверки подписи
@@ -59,41 +83,30 @@ export const useAuthStore = create((set, get) => ({
 
             return true;
           } else {
-            throw new Error(response.data.error || 'Ошибка авторизации');
+            console.warn('Ошибка авторизации на сервере. Использую локальный кэш.');
+            return fallbackAuth(set);
           }
         } else {
-          throw new Error('initData не найден');
+          // Если пустой initData (браузер / локальная разработка)
+          console.warn('initData не найден. Использую локальный кэш.');
+          return fallbackAuth(set);
         }
       } else {
         // Fallback для локального тестирования (без Telegram)
-        const savedToken = localStorage.getItem('token');
-        const savedUser = localStorage.getItem('user');
-
-        if (savedToken && savedUser) {
-          set({
-            user: JSON.parse(savedUser),
-            isAuthenticated: true,
-            token: savedToken,
-            loading: false,
-            error: null,
-          });
-          return true;
-        } else {
-          set({
-            loading: false,
-            error: 'Telegram WebApp не найден',
-          });
-          return false;
-        }
+        return fallbackAuth(set);
       }
     } catch (error) {
       console.error('Auth error:', error);
-      set({
-        error: error.response?.data?.error || error.message,
-        loading: false,
-        isAuthenticated: false,
-      });
-      return false;
+      // Пытаемся запустить fallback при сетевой ошибке
+      const fallbackSuccess = fallbackAuth(set);
+      if (!fallbackSuccess) {
+        set({
+          error: error.response?.data?.error || error.message,
+          loading: false,
+          isAuthenticated: false,
+        });
+      }
+      return fallbackSuccess;
     }
   },
 

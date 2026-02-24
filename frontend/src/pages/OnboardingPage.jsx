@@ -10,6 +10,8 @@ export default function OnboardingPage() {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
+        first_name: user?.first_name || '',
+        last_name: user?.last_name || '',
         age: '',
         gender: '',
         search_gender: '',
@@ -36,6 +38,8 @@ export default function OnboardingPage() {
         try {
             const payload = {
                 ...user,
+                first_name: formData.first_name,
+                last_name: formData.last_name,
                 age: parseInt(formData.age, 10),
                 gender: formData.gender,
                 search_gender: formData.search_gender,
@@ -83,7 +87,10 @@ export default function OnboardingPage() {
 
     const isStepValid = () => {
         switch (step) {
-            case 1: return formData.age !== '' && parseInt(formData.age) >= 18;
+            case 1:
+                return formData.age !== '' &&
+                    parseInt(formData.age) >= 18 &&
+                    formData.first_name.trim() !== '';
             case 2: return formData.gender !== '' && formData.search_gender !== '';
             case 3: return formData.photo_url !== null; // Bio is optional, photo is required
             default: return true;
@@ -104,16 +111,32 @@ export default function OnboardingPage() {
                 {step === 1 && (
                     <motion.div key="step1" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="w-full max-w-sm text-center">
                         <div className="text-6xl mb-6">🎂</div>
-                        <h2 className="text-3xl font-black mb-4 tracking-tighter">Сколько вам лет?</h2>
-                        <p className="text-white/50 mb-8 text-sm placeholder-white">Вы должны быть старше 18 лет.</p>
+                        <h2 className="text-3xl font-black mb-4 tracking-tighter">Расскажите о себе</h2>
+                        <p className="text-white/50 mb-8 text-sm placeholder-white">Укажите ваше имя и возраст (от 18 лет).</p>
 
-                        <input
-                            type="number"
-                            value={formData.age}
-                            onChange={(e) => handleChange('age', e.target.value)}
-                            placeholder="Возраст"
-                            className="w-full bg-[#141415] border border-white/10 rounded-2xl py-4 px-6 text-center text-3xl font-bold mb-8 focus:outline-none focus:border-indigo-500/50 appearance-none"
-                        />
+                        <div className="space-y-4 mb-8">
+                            <input
+                                type="text"
+                                value={formData.first_name}
+                                onChange={(e) => handleChange('first_name', e.target.value)}
+                                placeholder="Имя (Обязательно)"
+                                className="w-full bg-[#141415] border border-white/10 rounded-2xl py-4 px-6 text-center text-xl font-bold focus:outline-none focus:border-indigo-500/50 appearance-none text-white"
+                            />
+                            <input
+                                type="text"
+                                value={formData.last_name}
+                                onChange={(e) => handleChange('last_name', e.target.value)}
+                                placeholder="Фамилия (Необязательно)"
+                                className="w-full bg-[#141415] border border-white/10 rounded-2xl py-4 px-6 text-center text-xl font-bold focus:outline-none focus:border-indigo-500/50 appearance-none text-white"
+                            />
+                            <input
+                                type="number"
+                                value={formData.age}
+                                onChange={(e) => handleChange('age', e.target.value)}
+                                placeholder="Возраст"
+                                className="w-full bg-[#141415] border border-white/10 rounded-2xl py-4 px-6 text-center text-2xl font-bold focus:outline-none focus:border-indigo-500/50 appearance-none text-white"
+                            />
+                        </div>
                     </motion.div>
                 )}
 
