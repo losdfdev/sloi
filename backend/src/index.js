@@ -256,8 +256,8 @@ app.get('/api/profiles/discover', async (req, res) => {
     // Исключаем тех, кого уже оценили в БД (если их не слишком много)
     if (excludedIds.length > 0) {
       const limitedExcludedIds = excludedIds.slice(-200); // Reduce size to avoid URL limit
-      // Supabase-js v2 automatically formats arrays as (val1,val2) for the 'in' filter.
-      query = query.not('id', 'in', limitedExcludedIds);
+      // PostgREST syntax for NOT IN with multiple values requires parentheses
+      query = query.not('id', 'in', `(${limitedExcludedIds.join(',')})`);
     }
 
     const { data: profiles, error } = await query;
