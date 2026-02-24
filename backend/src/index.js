@@ -220,12 +220,22 @@ app.get('/api/profiles/discover', async (req, res) => {
 
     const excludedIds = interactions?.map((i) => i.target_user_id) || [];
 
+    // Получаем те профили, которые СУПЕРЛАЙКНУЛИ текущего пользователя
+    const { data: superlikesReceived } = await supabase
+      .from('interactions')
+      .select('user_id')
+      .eq('target_user_id', userId)
+      .eq('is_super_like', true);
+
+    const superLikedMeIds = superlikesReceived?.map((i) => i.user_id) || [];
+
     // Строим запрос для новых профилей
     let query = supabase
       .from('users')
-      .select('id, first_name, last_name, age, bio, photos, gender, notifications_enabled, hide_age, hide_online_status, show_in_search')
+      .select('id, first_name, last_name, age, bio, photos, gender, notifications_enabled, hide_age, hide_online_status, show_in_search, is_banned')
       .neq('id', userId)
       .or('show_in_search.eq.true,show_in_search.is.null')
+      .or('is_banned.eq.false,is_banned.is.null')
       .limit(limit);
 
     // Применяем фильтр по полу, если он задан и не "all"
@@ -245,7 +255,12 @@ app.get('/api/profiles/discover', async (req, res) => {
 
     if (error) throw error;
 
-    const filtered = profiles.filter((p) => !excludedIds.includes(p.id));
+    const filtered = profiles
+      .filter((p) => !excludedIds.includes(p.id))
+      .map(p => ({
+        ...p,
+        received_super_like: superLikedMeIds.includes(p.id)
+      }));
 
     res.json({
       profiles: filtered,

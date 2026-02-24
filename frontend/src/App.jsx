@@ -6,6 +6,8 @@ import DiscoverPage from './pages/DiscoverPage';
 import MatchesPage from './pages/MatchesPage';
 import OnboardingPage from './pages/OnboardingPage';
 import ProfilePage from './pages/ProfilePage';
+import LikesPage from './pages/LikesPage';
+import AdminPanel from './pages/AdminPanel';
 
 export default function App() {
   const { user, isAuthenticated, initAuth } = useAuthStore();
@@ -46,6 +48,8 @@ export default function App() {
             <Route path="/" element={<DiscoverPage />} />
             <Route path="/matches" element={<MatchesPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/likes" element={<LikesPage />} />
+            <Route path="/admin" element={<AdminPanel />} />
             <Route path="*" element={<DiscoverPage />} />
           </>
         )}

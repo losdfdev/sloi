@@ -121,6 +121,13 @@ export default function ProfilePage() {
 
           <div className="flex gap-2">
             <button
+              onClick={() => navigate('/likes')}
+              className="w-10 h-10 rounded-full bg-amber-500/10 hover:bg-amber-500/20 flex items-center justify-center text-amber-500 transition-colors border border-amber-500/20"
+              title="Кому я нравлюсь"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" /></svg>
+            </button>
+            <button
               onClick={() => navigate('/')}
               className="w-10 h-10 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 flex items-center justify-center text-indigo-300 transition-colors border border-indigo-500/20"
               title="Назад к свайпам"
@@ -420,6 +427,16 @@ export default function ProfilePage() {
 
         {/* Опции */}
         <div className="space-y-3">
+          {user?.is_admin && (
+            <button
+              onClick={() => navigate('/admin')}
+              className="w-full bg-red-500/10 text-red-500 font-semibold py-3.5 rounded-2xl hover:bg-red-500/20 transition flex items-center justify-center gap-2 border border-red-500/20"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+              <span>Панель Администратора</span>
+            </button>
+          )}
+
           <button
             onClick={() => setIsSettingsOpen(true)}
             className="w-full bg-indigo-500/5 text-indigo-200 font-semibold py-3.5 rounded-2xl hover:bg-indigo-500/10 transition flex items-center justify-center gap-2 border border-indigo-500/20"

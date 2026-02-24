@@ -114,6 +114,64 @@ export default function DiscoverPage() {
     }
   };
 
+  const handleSuperLike = async () => {
+    if (profiles.length === 0) return;
+    const profile = profiles[0];
+
+    if (!isPremium) {
+      alert('Суперлайки доступны только с Premium подпиской!');
+      navigate('/profile');
+      return;
+    }
+
+    setProfiles(prev => prev.slice(1));
+
+    try {
+      const response = await apiClient.post('/api/interactions/superlike', {
+        user_id: user?.id,
+        target_user_id: profile.id,
+      });
+
+      // Считаем суперлайк за обычный свайп в лимите, или оставляем так
+      setSwipeCount(prev => prev + 1);
+
+      if (response.data?.isMatch) {
+        showMatchNotification(profile);
+      }
+
+      if (profiles.length - 1 <= 3) fetchProfiles();
+    } catch (err) {
+      if (err.response?.status === 403) {
+        alert(err.response?.data?.error || 'Лимит суперлайков достигнут!');
+      }
+      console.error('Error superliking profile:', err);
+    }
+  };
+
+  const handleReport = async (profile) => {
+    if (!window.confirm(`Пожаловаться на пользователя ${profile.first_name}? Он больше не будет вам показываться.`)) {
+      return;
+    }
+
+    setProfiles(prev => prev.slice(1));
+
+    try {
+      // Отправляем жалобу, затем дизлайкаем
+      await apiClient.post('/api/reports', {
+        reporter_id: user?.id,
+        reported_id: profile.id,
+        reason: 'User Feedback Report'
+      });
+      await apiClient.post('/api/interactions/dislike', {
+        user_id: user?.id,
+        target_user_id: profile.id,
+      });
+      if (profiles.length - 1 <= 3) fetchProfiles();
+    } catch (err) {
+      console.error('Error reporting profile:', err);
+    }
+  };
+
   const showMatchNotification = (matchedProfile) => {
     // Триггер вибрации (Haptic Feedback) Telegram WebApp
     if (window.Telegram?.WebApp?.HapticFeedback) {
@@ -152,6 +210,13 @@ export default function DiscoverPage() {
           </div>
 
           <div className="flex gap-2">
+            <button
+              onClick={() => navigate('/likes')}
+              className="w-10 h-10 rounded-full bg-amber-500/10 hover:bg-amber-500/20 flex items-center justify-center text-amber-500 transition-colors border border-amber-500/20"
+              title="Кому я нравлюсь"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" /></svg>
+            </button>
             <button
               onClick={() => navigate('/matches')}
               className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/80 transition-colors border border-white/5"
@@ -214,6 +279,8 @@ export default function DiscoverPage() {
               profile={profiles[0]}
               onLike={handleLike}
               onDislike={handleDislike}
+              onSuperLike={handleSuperLike}
+              onReport={handleReport}
             />
           </div>
         ) : !hasSwipesLeft ? (

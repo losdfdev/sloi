@@ -6,8 +6,10 @@ import { motion, useMotionValue, useTransform } from 'framer-motion';
  * @param {Object} profile - Данные профиля
  * @param {Function} onLike - Callback при свайпе вправо
  * @param {Function} onDislike - Callback при свайпе влево
+ * @param {Function} onSuperLike - Callback при суперлайке
+ * @param {Function} onReport - Callback при жалобе
  */
-export default function SwipeCard({ profile, onLike, onDislike }) {
+export default function SwipeCard({ profile, onLike, onDislike, onSuperLike, onReport }) {
   const [exitX, setExitX] = useState(0);
 
   const x = useMotionValue(0);
@@ -37,10 +39,15 @@ export default function SwipeCard({ profile, onLike, onDislike }) {
       setExitX(300);
       haptic?.impactOccurred('medium');
       setTimeout(() => onLike?.(), 400);
-    } else {
+    } else if (type === 'dislike') {
       setExitX(-300);
       haptic?.impactOccurred('light');
       setTimeout(() => onDislike?.(), 400);
+    } else if (type === 'superlike') {
+      // Суперлайк уходит вверх
+      setExitX(100); // Для вращения анимации
+      haptic?.impactOccurred('heavy');
+      setTimeout(() => onSuperLike?.(), 400);
     }
   };
 
@@ -54,8 +61,23 @@ export default function SwipeCard({ profile, onLike, onDislike }) {
       onDragEnd={handleDragEnd}
       animate={{ x: exitX }}
       transition={{ type: 'spring', damping: 30, stiffness: 200 }}
-      className="relative w-full h-full rounded-3xl overflow-hidden shadow-[0_15px_35px_rgba(0,0,0,0.5)] cursor-grab active:cursor-grabbing select-none bg-gray-900 border border-white/10 flex flex-col"
+      className={`relative w-full h-full rounded-3xl overflow-hidden cursor-grab active:cursor-grabbing select-none bg-gray-900 border flex flex-col ${profile.received_super_like ? 'border-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.6)]' : 'border-white/10 shadow-[0_15px_35px_rgba(0,0,0,0.5)]'}`}
     >
+      {/* Кнопка "Жалоба" */}
+      <button
+        onClick={() => onReport?.(profile)}
+        className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-black/40 backdrop-blur border border-white/10 flex items-center justify-center text-white/50 hover:text-red-400 hover:bg-black/60 transition"
+        title="Пожаловаться"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+      </button>
+
+      {profile.received_super_like && (
+        <div className="absolute top-16 right-4 z-30 bg-amber-500 text-black text-xs font-bold px-3 py-1 rounded-full shadow-[0_4px_10px_rgba(251,191,36,0.5)] flex items-center gap-1">
+          ⭐️ Super Liked You!
+        </div>
+      )}
+
       {/* Фото профиля */}
       <div className="relative flex-1 bg-gray-900 flex items-center justify-center overflow-hidden">
         {profile.photos && profile.photos.length > 0 ? (
@@ -124,13 +146,21 @@ export default function SwipeCard({ profile, onLike, onDislike }) {
       </div>
 
       {/* Кнопки действия (Эффект стекла) */}
-      <div className="flex items-center justify-center gap-8 p-4 bg-white/10 backdrop-blur-xl border-t border-white/10 z-20 shrink-0">
+      <div className="flex items-center justify-center gap-6 p-4 bg-white/10 backdrop-blur-xl border-t border-white/10 z-20 shrink-0">
         <button
           onClick={() => handleAction('dislike')}
           className="w-14 h-14 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-red-500 shadow-[0_4px_15px_rgba(0,0,0,0.3)] hover:bg-white/20 hover:scale-110 transition-all active:scale-95"
           title="Дизлайк"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+
+        <button
+          onClick={() => handleAction('superlike')}
+          className="w-14 h-14 rounded-full bg-white/10 border border-amber-500/30 flex items-center justify-center text-amber-500 shadow-[0_4px_15px_rgba(251,191,36,0.2)] hover:bg-amber-500/20 hover:scale-110 transition-all active:scale-95"
+          title="Суперлайк (Premium)"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
         </button>
 
         <button

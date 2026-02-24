@@ -35,6 +35,14 @@ if (bot) {
         );
     });
 
+    // Handle /verify command
+    bot.onText(/^\/verify$/, (msg) => {
+        bot.sendMessage(
+            msg.chat.id,
+            "Функция верификации аккаунта находится в разработке. Ожидайте анонсов! 📝"
+        );
+    });
+
     bot.on('polling_error', (err) => {
         // Ignore polling errors to prevent crash loop if there is a conflict
         console.error('Telegram Bot Polling error:', err.message);
